@@ -57,28 +57,29 @@ void neopixel_setPixelColorRGB(RGB rgb)
 }
 
 
+// Red -> Blue -> Green -> Red -> ...
 uint32_t Wheel(uint8_t WheelPos) {
   uint8_t r, g, b;
   
   if (WheelPos < 85)
   {
-    r = WheelPos * 3;
-    g = 255 - WheelPos * 3 ;
-    b = 0;
-  }
-  else if (WheelPos < 170)
-  {
-    WheelPos -= 85;
     r = 255 - WheelPos * 3;
     g = 0;
     b = WheelPos * 3;
   }
+  else if (WheelPos < 170)
+  {
+    WheelPos -= 85;
+    r = 0;
+    g = WheelPos * 3;;
+    b = 255 - WheelPos * 3;
+  }
   else
   {
     WheelPos -= 170;
-    r = 0;
-    g = WheelPos * 3;
-    b = 255 - WheelPos * 3;
+    r = WheelPos * 3;
+    g = 255 - WheelPos * 3;
+    b = 0;
   }
 
   return ((uint32_t) r << 16) | ((uint32_t) g << 8) | (uint32_t) b;
@@ -98,9 +99,9 @@ void rainbowTick(void)
 
 void LerpRGB(RGB a, RGB b, float t, RGB* out)
 {
-  out->r = t * a.r + (1 - t) * b.r;
-  out->g = t * a.g + (1 - t) * b.g;
-  out->b = t * a.b + (1 - t) * b.b;
+  out->r = (1 - t) * a.r + t * b.r;
+  out->g = (1 - t) * a.g + t * b.g;
+  out->b = (1 - t) * a.b + t * b.b;
 }
 
 
@@ -127,18 +128,9 @@ void loop(void)
   {
     if (time_elapsed_ms % 1000 < 500)
     {
-      if (time_elapsed_ms < POMODORO_MS / 2)
-      {
-        t = 2.f * time_elapsed_ms / POMODORO_MS;
-        LerpRGB(yellow, red, t * t, &rgb);
-        neopixel_setPixelColorRGB(rgb);
-      }
-      else
-      {
-        t = (2.f * time_elapsed_ms - POMODORO_MS) / POMODORO_MS;
-        LerpRGB(green, yellow, t, &rgb);
-        neopixel_setPixelColorRGB(rgb);
-      }
+      t = (float) time_elapsed_ms / POMODORO_MS;
+      LerpRGB(green, red, t, &rgb);
+      neopixel_setPixelColorRGB(rgb);
     }
     else
     {
