@@ -1,5 +1,7 @@
 // Rainbow cycle on the NeoPixel: 2024 ladyada for Adafruit Industries, MIT License
 
+#include <math.h>
+
 #include <WS2812.h>   // NeoPixel
 
 // QT Py CH552 (8051) specific
@@ -21,21 +23,41 @@ void neopixel_show()
 }
 
 
-uint8_t neopixel_brightness = 255;
+uint8_t neopixel_brightness = 150;
 
 
-void neopixel_setPixelColorRgb(uint32_t c)
+void neopixel_setPixelColor(uint32_t c)
 {
-  uint16_t r, g, b;
-  r = (((c >> 16) & 0xFF) * neopixel_brightness) >> 8;
-  g = (((c >> 8) & 0xFF) * neopixel_brightness) >> 8;
-  b = ((c & 0xFF) * neopixel_brightness) >> 8;
+  uint8_t r, g, b;
+  r = ((c >> 16) & 0xFF) * neopixel_brightness >> 8;
+  g = ((c >> 8) & 0xFF) * neopixel_brightness >> 8;
+  b = (c & 0xFF) * neopixel_brightness >> 8;
 
   set_pixel_for_GRB_LED(ledData, /* LED # */ 0, r, g, b);
 }
 
 
-uint32_t RgbWheel(uint8_t WheelPos) {
+typedef struct
+{
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} RGB;
+
+
+void neopixel_setPixelColorRGB(RGB rgb)
+{
+  set_pixel_for_GRB_LED(
+    ledData,
+    /* LED # */ 0,
+    (uint16_t) rgb.r * neopixel_brightness >> 8,
+    (uint16_t) rgb.g * neopixel_brightness >> 8,
+    (uint16_t) rgb.b * neopixel_brightness >> 8
+  );
+}
+
+
+uint32_t Wheel(uint8_t WheelPos) {
   uint8_t r, g, b;
   
   if (WheelPos < 85)
@@ -63,25 +85,72 @@ uint32_t RgbWheel(uint8_t WheelPos) {
 }
 
 
-void rainbowTick()
+void rainbowTick(void)
 {
   for (uint8_t i = 0; i < 255; ++i)
   {
-    neopixel_setPixelColorRgb(RgbWheel(i));
+    neopixel_setPixelColor(Wheel(i));
     neopixel_show();
     delay(20);
   }
 }
 
 
-void setup()
+void LerpRGB(RGB a, RGB b, float t, RGB* out)
+{
+  out->r = t * a.r + (1 - t) * b.r;
+  out->g = t * a.g + (1 - t) * b.g;
+  out->b = t * a.b + (1 - t) * b.b;
+}
+
+
+void setup(void)
 {
   pinMode(NEOPIXEL_PIN, OUTPUT);
   neopixel_brightness = 50;
 }
 
 
-void loop()
+void loop(void)
 {
-  rainbowTick();
+  const uint32_t POMODORO_MS = 1000UL * 60 * 25;
+
+  RGB red     = { 0xFF, 0x00, 0x00 };
+  RGB yellow  = { 0xFF, 0xFF, 0x00 };
+  RGB green   = { 0x00, 0xFF, 0x00 };
+  
+  float t;
+  RGB rgb;
+
+  uint32_t time_elapsed_ms;
+  while ((time_elapsed_ms = millis()) < POMODORO_MS)
+  {
+    if (time_elapsed_ms % 1000 < 500)
+    {
+      if (time_elapsed_ms < POMODORO_MS / 2)
+      {
+        t = 2.f * time_elapsed_ms / POMODORO_MS;
+        LerpRGB(yellow, red, t * t, &rgb);
+        neopixel_setPixelColorRGB(rgb);
+      }
+      else
+      {
+        t = (2.f * time_elapsed_ms - POMODORO_MS) / POMODORO_MS;
+        LerpRGB(green, yellow, t, &rgb);
+        neopixel_setPixelColorRGB(rgb);
+      }
+    }
+    else
+    {
+      neopixel_setPixelColor(0x000000);
+    }
+
+    neopixel_show();
+    delay(40);
+  }
+
+  for (;;)
+  {
+    rainbowTick();
+  }
 }
