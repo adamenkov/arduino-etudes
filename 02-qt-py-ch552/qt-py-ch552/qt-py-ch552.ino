@@ -1,7 +1,3 @@
-// Rainbow cycle on the NeoPixel: 2024 ladyada for Adafruit Industries, MIT License
-
-#include <math.h>
-
 #include <WS2812.h>   // NeoPixel
 
 // QT Py CH552 (8051) specific
@@ -58,6 +54,7 @@ void neopixel_setPixelColorRGB(RGB rgb)
 
 
 // Red -> Blue -> Green -> Red -> ...
+// (Original rainbow cycle on the NeoPixel: 2024 ladyada for Adafruit Industries, MIT License)
 uint32_t Wheel(uint8_t WheelPos) {
   uint8_t r, g, b;
   
