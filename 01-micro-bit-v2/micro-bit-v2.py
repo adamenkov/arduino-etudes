@@ -42,6 +42,9 @@ class State:
                     time_entered_ms = time.ticks_ms()
             display.clear()
 
+    def onExit(self):
+        pass
+
 class ShowNumPomodoros(State):
     pomodoro_images = [
         Image('0'), Image('1'), Image('2'), Image('3'), Image('4'),
@@ -136,6 +139,9 @@ class AchievingPomodoro(State):
         brightness = self.app.pixel_brightness if time_elapsed_ms % 1000 < 500 else 0
         display.set_pixel(x, y, brightness)
 
+    def onExit(self):
+        self.time_paused_ms = None
+
 class PomodoroApp:
     def __init__(self):
         self.numPomodoros = 0
@@ -148,9 +154,13 @@ class PomodoroApp:
         self.setState(self.showNumPomodoros)
 
     def setState(self, state):
+        if self.currentState:
+            self.currentState.onExit()
+        
+        self.currentState = state
+        
         if state:
             state.onEnter()
-        self.currentState = state
 
     def run(self):
         set_volume(127)
